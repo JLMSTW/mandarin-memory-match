@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mandarin Memory Match Game</title>
+
+  <!-- 用 link 載入字型，避免 @import 在沙盒被擋 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
+    .game-container{max-width:1200px;margin:0 auto}
+    .header{text-align:center;margin-bottom:30px;color:#fff}
+    .header h1{font-size:2.5rem;font-weight:700;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+    .header p{font-size:1.1rem;opacity:.9}
+    .game-stats{display:flex;justify-content:center;gap:30px;margin-bottom:30px;flex-wrap:wrap}
+    .stat-item{background:rgba(255,255,255,.2);padding:15px 25px;border-radius:15px;color:#fff;text-align:center;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3)}
+    .stat-number{font-size:1.8rem;font-weight:600;display:block}
+    .stat-label{font-size:.9rem;opacity:.8}
+    .game-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+    .card{aspect-ratio:3/4;perspective:1000px;cursor:pointer}
+    .card-inner{position:relative;width:100%;height:100%;text-align:center;transition:transform .6s;transform-style:preserve-3d}
+    .card.flipped .card-inner{transform:rotateY(180deg)}
+    .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;box-shadow:0 8px 25px rgba(0,0,0,.15);border:3px solid rgba(255,255,255,.2)}
+    .card-front{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff}
+    .card-back{background:linear-gradient(135deg,#4ecdc4,#44a08d);color:#fff;transform:rotateY(180deg)}
+    .card-back.french{background:linear-gradient(135deg,#a8edea,#fed6e3);color:#2c3e50}
+    .chinese-char{font-family:'Noto Sans SC',sans-serif;font-size:2.5rem;font-weight:700;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+    .pinyin{font-size:1.2rem;font-weight:500;opacity:.9;font-style:italic}
+    .french-meaning{font-size:1.2rem;font-weight:600;text-align:center;line-height:1.4}
+    .card.matched{opacity:.7;transform:scale(.95);pointer-events:none}
+    .card.matched .card-inner{transform:rotateY(180deg)}
+    .controls{text-align:center;margin-top:30px}
+    .btn{background:linear-gradient(135deg,#ff9a9e,#fecfef);color:#2c3e50;border:none;padding:15px 30px;border-radius:25px;font-size:1.1rem;font-weight:600;cursor:pointer;transition:all .3s ease;box-shadow:0 4px 15px rgba(0,0,0,.2)}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+    .victory-message{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:40px;border-radius:20px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.3);z-index:1000;display:none}
+    .victory-message h2{font-size:2rem;margin-bottom:15px}
+    .victory-message p{font-size:1.1rem;margin-bottom:20px}
+    @media (max-width:768px){
+      .game-board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px}
+      .chinese-char{font-size:2rem}
+      .french-meaning{font-size:1.05rem}
+      .header h1{font-size:2rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <h1>🧠 Mandarin Memory Match</h1>
+      <p>Match Chinese characters with their French meanings!</p>
+    </div>
+
+    <div class="game-stats">
+      <div class="stat-item"><span class="stat-number" id="moves">0</span><span class="stat-label">Moves</span></div>
+      <div class="stat-item"><span class="stat-number" id="matches">0</span><span class="stat-label">Matches</span></div>
+      <div class="stat-item"><span class="stat-number" id="timer">00:00</span><span class="stat-label">Time</span></div>
+    </div>
+
+    <div class="game-board" id="gameBoard"></div>
+
+    <div class="controls">
+      <button class="btn" id="newGameBtn">🔄 New Game</button>
+    </div>
+  </div>
+
+  <div class="victory-message" id="victoryMessage">
+    <h2>🎉 Félicitations!</h2>
+    <p>You've matched all the vocabulary pairs!</p>
+    <button class="btn" id="playAgainBtn">Play Again</button>
+  </div>
+
+  <script>
+    const vocabulary = [
+      { chinese:'邀請', pinyin:'yāo qǐng', french:'(V.) inviter' },
+      { chinese:'有趣', pinyin:'yǒu qù', french:'(Adj.) intéressant(e)' },
+      { chinese:'蠻', pinyin:'mán', french:'(Adv./Adj.) assez / plutôt' },
+      { chinese:'看看', pinyin:'kàn kàn', french:'(V.) jeter un œil / essayer de voir' },
+      { chinese:'合作', pinyin:'hé zuò', french:'(N./V.) coopération / coopérer' },
+      { chinese:'原因', pinyin:'yuán yīn', french:'(N.) raison' },
+      { chinese:'不得不', pinyin:'bù dé bù', french:"(Expr.) ne pas avoir le choix / être obligé de" },
+      { chinese:'暫停', pinyin:'zhàn tíng', french:'(V.) suspendre / faire une pause' },
+      { chinese:'原本', pinyin:'yuán běn', french:"(Adv./Adj.) à l'origine / originalement" },
+      { chinese:'延', pinyin:'yán', french:'(V.) reporter / retarder' },
+      { chinese:'計畫', pinyin:'jì huà', french:'(N./V.) plan / planifier' }
+    ];
+
+    let gameState;
+
+    function createCards(){
+      const cards = [];
+      vocabulary.forEach((item, idx)=>{
+        cards.push({ id:`chinese-${idx}`, type:'chinese', pairId:idx, content:item });
+        cards.push({ id:`french-${idx}`,  type:'french',  pairId:idx, content:item });
+      });
+      return shuffle(cards);
+    }
+
+    function shuffle(arr){
+      const a=[...arr];
+      for(let i=a.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    function createCardElement(card){
+      const el=document.createElement('div');
+      el.className='card';
+      el.dataset.pairId=card.pairId;
+
+      const inner=document.createElement('div');
+      inner.className='card-inner';
+
+      const front=document.createElement('div');
+      front.className='card-face card-front';
+      front.innerHTML='<div style="font-size:3rem;">🀄</div>';
+
+      const back=document.createElement('div');
+      back.className=`card-face card-back ${card.type==='french'?'french':''}`;
+      back.innerHTML = card.type==='chinese'
+        ? `<div class="chinese-char">${card.content.chinese}</div><div class="pinyin">${card.content.pinyin}</div>`
+        : `<div class="french-meaning">${card.content.french}</div>`;
+
+      inner.append(front,back);
+      el.appendChild(inner);
+      el.addEventListener('click',()=>flipCard(el));
+      return el;
+    }
+
+    function flipCard(el){
+      if(gameState.flippedCards.length>=2 || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+      if(!gameState.gameStarted) startGame();
+
+      el.classList.add('flipped');
+      gameState.flippedCards.push(el);
+
+      if(gameState.flippedCards.length===2){
+        gameState.moves++; updateStats();
+        setTimeout(checkMatch, 600);
+      }
+    }
+
+    function checkMatch(){
+      const [c1,c2]=gameState.flippedCards;
+      if(c1.dataset.pairId===c2.dataset.pairId){
+        c1.classList.add('matched'); c2.classList.add('matched');
+        gameState.matches++; updateStats();
+        if(gameState.matches===vocabulary.length) endGame();
+      }else{
+        c1.classList.remove('flipped'); c2.classList.remove('flipped');
+      }
+      gameState.flippedCards=[];
+    }
+
+    function startGame(){
+      gameState.gameStarted=true;
+      gameState.startTime=Date.now();
+      gameState.timer=setInterval(updateTimer,1000);
+    }
+
+    function updateTimer(){
+      const s=Math.floor((Date.now()-gameState.startTime)/1000);
+      const mm=String(Math.floor(s/60)).padStart(2,'0');
+      const ss=String(s%60).padStart(2,'0');
+      document.getElementById('timer').textContent=`${mm}:${ss}`;
+    }
+
+    function updateStats(){
+      document.getElementById('moves').textContent=gameState.moves;
+      document.getElementById('matches').textContent=gameState.matches;
+    }
+
+    function endGame(){
+      clearInterval(gameState.timer);
+      setTimeout(()=>document.getElementById('victoryMessage').style.display='block',300);
+    }
+
+    function resetGame(){
+      if(gameState?.timer) clearInterval(gameState.timer);
+      gameState={
+        cards: createCards(),
+        flippedCards:[],
+        matches:0,
+        moves:0,
+        gameStarted:false,
+        startTime:null,
+        timer:null
+      };
+      document.getElementById('victoryMessage').style.display='none';
+      document.getElementById('moves').textContent='0';
+      document.getElementById('matches').textContent='0';
+      document.getElementById('timer').textContent='00:00';
+
+      const board=document.getElementById('gameBoard');
+      board.innerHTML='';
+      gameState.cards.forEach(c=>board.appendChild(createCardElement(c)));
+    }
+
+    // 綁定按鈕（避免 inline onclick 被沙盒封鎖）
+    document.addEventListener('DOMContentLoaded', ()=>{
+      document.getElementById('newGameBtn').addEventListener('click', resetGame);
+      document.getElementById('playAgainBtn').addEventListener('click', resetGame);
+      resetGame();
+    });
+  </script>
+</body>
+</html>
