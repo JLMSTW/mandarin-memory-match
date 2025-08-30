@@ -5,44 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mandarin Memory Match Game</title>
 
-  <!-- 用 link 載入字型，避免 @import 在沙盒被擋 -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
     .game-container{max-width:1200px;margin:0 auto}
-    .header{text-align:center;margin-bottom:30px;color:#fff}
-    .header h1{font-size:2.5rem;font-weight:700;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
-    .header p{font-size:1.1rem;opacity:.9}
-    .game-stats{display:flex;justify-content:center;gap:30px;margin-bottom:30px;flex-wrap:wrap}
-    .stat-item{background:rgba(255,255,255,.2);padding:15px 25px;border-radius:15px;color:#fff;text-align:center;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3)}
-    .stat-number{font-size:1.8rem;font-weight:600;display:block}
-    .stat-label{font-size:.9rem;opacity:.8}
-    .game-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:30px}
+    .header{text-align:center;margin-bottom:20px;color:#fff}
+    .header h1{font-size:2.3rem;font-weight:700;margin-bottom:8px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+    .header p{font-size:1.05rem;opacity:.9}
+
+    .toolbar{display:flex;gap:12px;justify-content:center;align-items:center;flex-wrap:wrap;margin:16px 0 8px}
+    .select, .btn{appearance:none;border:none;border-radius:12px;padding:10px 14px;font-weight:600;cursor:pointer}
+    .select{background:#fff}
+    .btn{background:linear-gradient(135deg,#ff9a9e,#fecfef);color:#2c3e50;box-shadow:0 4px 12px rgba(0,0,0,.18);transition:transform .2s, box-shadow .2s}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.24)}
+
+    .game-stats{display:flex;justify-content:center;gap:22px;margin:10px 0 20px;flex-wrap:wrap}
+    .stat-item{background:rgba(255,255,255,.2);padding:12px 18px;border-radius:14px;color:#fff;text-align:center;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3)}
+    .stat-number{font-size:1.4rem;font-weight:700;display:block}
+    .stat-label{font-size:.85rem;opacity:.85}
+
+    .game-board{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;margin-bottom:24px}
     .card{aspect-ratio:3/4;perspective:1000px;cursor:pointer}
     .card-inner{position:relative;width:100%;height:100%;text-align:center;transition:transform .6s;transform-style:preserve-3d}
     .card.flipped .card-inner{transform:rotateY(180deg)}
-    .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;box-shadow:0 8px 25px rgba(0,0,0,.15);border:3px solid rgba(255,255,255,.2)}
+    .card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.15);border:3px solid rgba(255,255,255,.2)}
     .card-front{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff}
     .card-back{background:linear-gradient(135deg,#4ecdc4,#44a08d);color:#fff;transform:rotateY(180deg)}
     .card-back.french{background:linear-gradient(135deg,#a8edea,#fed6e3);color:#2c3e50}
-    .chinese-char{font-family:'Noto Sans SC',sans-serif;font-size:2.5rem;font-weight:700;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
-    .pinyin{font-size:1.2rem;font-weight:500;opacity:.9;font-style:italic}
-    .french-meaning{font-size:1.2rem;font-weight:600;text-align:center;line-height:1.4}
-    .card.matched{opacity:.7;transform:scale(.95);pointer-events:none}
+    .chinese-char{font-family:'Noto Sans SC',sans-serif;font-size:2.2rem;font-weight:700;margin-bottom:8px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+    .pinyin{font-size:1.1rem;font-weight:500;opacity:.95;font-style:italic}
+    .french-meaning{font-size:1.12rem;font-weight:700;text-align:center;line-height:1.35}
+    .card.matched{opacity:.7;transform:scale(.97);pointer-events:none}
     .card.matched .card-inner{transform:rotateY(180deg)}
-    .controls{text-align:center;margin-top:30px}
-    .btn{background:linear-gradient(135deg,#ff9a9e,#fecfef);color:#2c3e50;border:none;padding:15px 30px;border-radius:25px;font-size:1.1rem;font-weight:600;cursor:pointer;transition:all .3s ease;box-shadow:0 4px 15px rgba(0,0,0,.2)}
-    .btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
-    .victory-message{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:40px;border-radius:20px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.3);z-index:1000;display:none}
-    .victory-message h2{font-size:2rem;margin-bottom:15px}
-    .victory-message p{font-size:1.1rem;margin-bottom:20px}
+
+    .victory-message{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:34px;border-radius:18px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.3);z-index:1000;display:none}
+    .victory-message h2{font-size:1.8rem;margin-bottom:10px}
+    .victory-message p{font-size:1rem;margin-bottom:16px}
+
     @media (max-width:768px){
-      .game-board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px}
-      .chinese-char{font-size:2rem}
-      .french-meaning{font-size:1.05rem}
-      .header h1{font-size:2rem}
+      .game-board{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+      .chinese-char{font-size:1.9rem}
+      .french-meaning{font-size:1rem}
+      .header h1{font-size:1.9rem}
     }
   </style>
 </head>
@@ -53,19 +60,29 @@
       <p>Match Chinese characters with their French meanings!</p>
     </div>
 
+    <!-- 難度與控制 -->
+    <div class="toolbar">
+      <label style="color:#fff;font-weight:600">Difficulty</label>
+      <select id="difficulty" class="select" title="Difficulty">
+        <option value="easy" selected>Easy（6 字）</option>
+        <option value="advanced">Advanced（11 字）</option>
+      </select>
+      <button class="btn" id="newGameBtn">🔄 New Game</button>
+    </div>
+
+    <!-- 統計 -->
     <div class="game-stats">
       <div class="stat-item"><span class="stat-number" id="moves">0</span><span class="stat-label">Moves</span></div>
       <div class="stat-item"><span class="stat-number" id="matches">0</span><span class="stat-label">Matches</span></div>
       <div class="stat-item"><span class="stat-number" id="timer">00:00</span><span class="stat-label">Time</span></div>
+      <div class="stat-item"><span class="stat-number" id="levelTag">Easy</span><span class="stat-label">Level</span></div>
     </div>
 
+    <!-- 遊戲區 -->
     <div class="game-board" id="gameBoard"></div>
-
-    <div class="controls">
-      <button class="btn" id="newGameBtn">🔄 New Game</button>
-    </div>
   </div>
 
+  <!-- 勝利訊息 -->
   <div class="victory-message" id="victoryMessage">
     <h2>🎉 Félicitations!</h2>
     <p>You've matched all the vocabulary pairs!</p>
@@ -73,7 +90,11 @@
   </div>
 
   <script>
-    const vocabulary = [
+    // ----- 設定：配對失敗翻回去的延遲（毫秒） -----
+    const FLIP_BACK_DELAY = 1500; // 放慢為 1.5s
+
+    // 完整 11 字題庫（進階用）
+    const FULL_VOCAB = [
       { chinese:'邀請', pinyin:'yāo qǐng', french:'(V.) inviter' },
       { chinese:'有趣', pinyin:'yǒu qù', french:'(Adj.) intéressant(e)' },
       { chinese:'蠻', pinyin:'mán', french:'(Adv./Adj.) assez / plutôt' },
@@ -87,13 +108,16 @@
       { chinese:'計畫', pinyin:'jì huà', french:'(N./V.) plan / planifier' }
     ];
 
+    // 取前 6 字作為入門關卡
+    const EASY_VOCAB = FULL_VOCAB.slice(0, 6);
+
     let gameState;
 
-    function createCards(){
+    function buildCards(list){
       const cards = [];
-      vocabulary.forEach((item, idx)=>{
-        cards.push({ id:`chinese-${idx}`, type:'chinese', pairId:idx, content:item });
-        cards.push({ id:`french-${idx}`,  type:'french',  pairId:idx, content:item });
+      list.forEach((item, idx)=>{
+        cards.push({ type:'chinese', pairId:idx, content:item });
+        cards.push({ type:'french',  pairId:idx, content:item });
       });
       return shuffle(cards);
     }
@@ -107,104 +131,116 @@
       return a;
     }
 
-    function createCardElement(card){
-      const el=document.createElement('div');
-      el.className='card';
-      el.dataset.pairId=card.pairId;
+    function createCardEl(card){
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.dataset.pairId = card.pairId;
 
-      const inner=document.createElement('div');
-      inner.className='card-inner';
+      const inner = document.createElement('div');
+      inner.className = 'card-inner';
 
-      const front=document.createElement('div');
-      front.className='card-face card-front';
-      front.innerHTML='<div style="font-size:3rem;">🀄</div>';
+      const front = document.createElement('div');
+      front.className = 'card-face card-front';
+      front.innerHTML = '<div style="font-size:3rem;">🀄</div>';
 
-      const back=document.createElement('div');
-      back.className=`card-face card-back ${card.type==='french'?'french':''}`;
+      const back = document.createElement('div');
+      back.className = `card-face card-back ${card.type==='french'?'french':''}`;
       back.innerHTML = card.type==='chinese'
         ? `<div class="chinese-char">${card.content.chinese}</div><div class="pinyin">${card.content.pinyin}</div>`
         : `<div class="french-meaning">${card.content.french}</div>`;
 
-      inner.append(front,back);
+      inner.append(front, back);
       el.appendChild(inner);
-      el.addEventListener('click',()=>flipCard(el));
+      el.addEventListener('click', ()=> flipCard(el));
       return el;
     }
 
     function flipCard(el){
-      if(gameState.flippedCards.length>=2 || el.classList.contains('flipped') || el.classList.contains('matched')) return;
-      if(!gameState.gameStarted) startGame();
+      if(gameState.flipped.length>=2 || el.classList.contains('flipped') || el.classList.contains('matched')) return;
+      if(!gameState.started) startTimer();
 
       el.classList.add('flipped');
-      gameState.flippedCards.push(el);
+      gameState.flipped.push(el);
 
-      if(gameState.flippedCards.length===2){
+      if(gameState.flipped.length===2){
         gameState.moves++; updateStats();
-        setTimeout(checkMatch, 600);
+        setTimeout(checkMatch, FLIP_BACK_DELAY);
       }
     }
 
     function checkMatch(){
-      const [c1,c2]=gameState.flippedCards;
-      if(c1.dataset.pairId===c2.dataset.pairId){
-        c1.classList.add('matched'); c2.classList.add('matched');
+      const [a,b] = gameState.flipped;
+      if(a.dataset.pairId === b.dataset.pairId){
+        a.classList.add('matched'); b.classList.add('matched');
         gameState.matches++; updateStats();
-        if(gameState.matches===vocabulary.length) endGame();
+        if(gameState.matches === gameState.pairs) finish();
       }else{
-        c1.classList.remove('flipped'); c2.classList.remove('flipped');
+        a.classList.remove('flipped');
+        b.classList.remove('flipped');
       }
-      gameState.flippedCards=[];
+      gameState.flipped = [];
     }
 
-    function startGame(){
-      gameState.gameStarted=true;
-      gameState.startTime=Date.now();
-      gameState.timer=setInterval(updateTimer,1000);
-    }
-
-    function updateTimer(){
-      const s=Math.floor((Date.now()-gameState.startTime)/1000);
-      const mm=String(Math.floor(s/60)).padStart(2,'0');
-      const ss=String(s%60).padStart(2,'0');
-      document.getElementById('timer').textContent=`${mm}:${ss}`;
+    function startTimer(){
+      gameState.started = true;
+      gameState.start = Date.now();
+      gameState.timer = setInterval(()=>{
+        const s = Math.floor((Date.now()-gameState.start)/1000);
+        const mm = String(Math.floor(s/60)).padStart(2,'0');
+        const ss = String(s%60).padStart(2,'0');
+        document.getElementById('timer').textContent = `${mm}:${ss}`;
+      }, 1000);
     }
 
     function updateStats(){
-      document.getElementById('moves').textContent=gameState.moves;
-      document.getElementById('matches').textContent=gameState.matches;
+      document.getElementById('moves').textContent = gameState.moves;
+      document.getElementById('matches').textContent = gameState.matches;
     }
 
-    function endGame(){
+    function finish(){
       clearInterval(gameState.timer);
-      setTimeout(()=>document.getElementById('victoryMessage').style.display='block',300);
+      setTimeout(()=> document.getElementById('victoryMessage').style.display='block', 300);
     }
 
-    function resetGame(){
+    function reset(level){
+      // 決定難度
+      const list = level==='advanced' ? FULL_VOCAB : EASY_VOCAB;
+      document.getElementById('levelTag').textContent = (level==='advanced' ? 'Advanced' : 'Easy');
+
+      // 先清計時器
       if(gameState?.timer) clearInterval(gameState.timer);
-      gameState={
-        cards: createCards(),
-        flippedCards:[],
-        matches:0,
-        moves:0,
-        gameStarted:false,
-        startTime:null,
-        timer:null
-      };
-      document.getElementById('victoryMessage').style.display='none';
-      document.getElementById('moves').textContent='0';
-      document.getElementById('matches').textContent='0';
-      document.getElementById('timer').textContent='00:00';
 
-      const board=document.getElementById('gameBoard');
-      board.innerHTML='';
-      gameState.cards.forEach(c=>board.appendChild(createCardElement(c)));
+      // 初始化狀態
+      gameState = {
+        cards: buildCards(list),
+        flipped: [],
+        matches: 0,
+        moves: 0,
+        started: false,
+        start: null,
+        timer: null,
+        pairs: list.length
+      };
+
+      // 清畫面
+      document.getElementById('victoryMessage').style.display = 'none';
+      document.getElementById('moves').textContent = '0';
+      document.getElementById('matches').textContent = '0';
+      document.getElementById('timer').textContent = '00:00';
+
+      const board = document.getElementById('gameBoard');
+      board.innerHTML = '';
+      gameState.cards.forEach(c => board.appendChild(createCardEl(c)));
     }
 
-    // 綁定按鈕（避免 inline onclick 被沙盒封鎖）
+    // 綁定 UI
     document.addEventListener('DOMContentLoaded', ()=>{
-      document.getElementById('newGameBtn').addEventListener('click', resetGame);
-      document.getElementById('playAgainBtn').addEventListener('click', resetGame);
-      resetGame();
+      const levelSelect = document.getElementById('difficulty');
+      document.getElementById('newGameBtn').addEventListener('click', ()=> reset(levelSelect.value));
+      document.getElementById('playAgainBtn').addEventListener('click', ()=> reset(levelSelect.value));
+      levelSelect.addEventListener('change', e => reset(e.target.value));
+      // 預設 Easy（6 字）
+      reset('easy');
     });
   </script>
 </body>
